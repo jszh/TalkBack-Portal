@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TalkBack Recorder</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>TalkBack Recorder</h1>
+      <button id="record-btn">● Record</button>
+      <span id="recording-stats"></span>
+      <div id="status">connecting…</div>
+    </header>
+
+    <div id="metadata-modal" class="modal-hidden" hidden style="display: none;">
+      <div class="modal-card">
+        <h2>Save recording</h2>
+        <div class="modal-summary" id="modal-summary"></div>
+        <label>Participant ID
+          <input id="meta-participant" type="text" autocomplete="off" />
+        </label>
+        <label>App ID
+          <input id="meta-app" type="text" autocomplete="off" list="app-history-list" />
+          <datalist id="app-history-list"></datalist>
+        </label>
+        <label>Session ID
+          <input id="meta-session" type="text" autocomplete="off" />
+        </label>
+        <label>Task
+          <input id="meta-task" type="text" autocomplete="off" />
+        </label>
+        <div class="modal-actions">
+          <button id="meta-cancel" class="secondary">Discard</button>
+          <button id="meta-submit">Download zip</button>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section id="transcript-pane">
+        <div class="pane-header">
+          <h2>Transcript</h2>
+          <button id="clear-transcript">clear</button>
+        </div>
+        <ul id="transcript-list"></ul>
+      </section>
+      <section id="screen-pane">
+        <h2>Screen</h2>
+        <div id="screen-meta">
+          <button id="refresh-screenshot">⟳  refresh</button>
+          <span id="screen-stamp"></span>
+        </div>
+        <div id="screen-body">
+          <div id="screen-stage-wrap">
+            <div id="screen-stage">
+              <img id="screenshot" alt="device screenshot" />
+              <div id="bounds-overlay"></div>
+            </div>
+          </div>
+          <div id="screen-controls">
+            <button data-action="ACTION_SWIPE_LEFT">←  swipe</button>
+            <button data-action="ACTION_SWIPE_RIGHT">→  swipe</button>
+            <button data-action="ACTION_CLICK">•  click</button>
+            <button data-action="ACTION_LONG_CLICK">••  long click</button>
+            <button data-action="ACTION_BACK">⟲  back</button>
+            <button data-action="ACTION_HOME">⌂  home</button>
+            <div class="say-row">
+              <input id="say-input" type="text" placeholder="text to announce" />
+              <button id="say-button">say</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="tree-pane">
+        <h2>Accessibility tree</h2>
+        <pre id="tree-output"></pre>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
