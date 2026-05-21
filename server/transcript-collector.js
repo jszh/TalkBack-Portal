@@ -52,11 +52,21 @@ class TranscriptCollector extends EventEmitter {
         this.emit('view_scrolled', { timestamp });
         break;
       case 'action':
-        this.lastAction = { timestamp, action: payload.action || null };
+        this.lastAction = {
+          timestamp,
+          action: payload.action || null,
+          actionIndex: typeof payload.action_index === 'number' ? payload.action_index : null,
+          fromBroadcast: true,
+        };
         this.emit('action', this.lastAction);
         break;
       case 'gesture':
-        this.emit('gesture', { timestamp, gesture: payload.gesture || null });
+        this.emit('gesture', {
+          timestamp,
+          gesture: payload.gesture || null,
+          actionIndex: typeof payload.action_index === 'number' ? payload.action_index : null,
+          fromBroadcast: !!payload.from_broadcast,
+        });
         break;
       case 'click':
         this.emit('click', {
@@ -65,6 +75,8 @@ class TranscriptCollector extends EventEmitter {
           resourceId: payload.resourceId || null,
           className: payload.className || null,
           text: payload.text || null,
+          actionIndex: typeof payload.action_index === 'number' ? payload.action_index : null,
+          fromBroadcast: !!payload.from_broadcast,
         });
         break;
       case 'text_change':
@@ -73,6 +85,16 @@ class TranscriptCollector extends EventEmitter {
           resourceId: payload.resourceId || null,
           className: payload.className || null,
           text: payload.text || null,
+        });
+        break;
+      case 'announcement':
+        // System-initiated announcement (TYPE_ANNOUNCEMENT or
+        // TYPE_NOTIFICATION_STATE_CHANGED). Distinct from 'speech' so the
+        // host can render it standalone without merging into a concurrent
+        // focus event.
+        this.emit('announcement', {
+          timestamp,
+          text: payload.speech || '',
         });
         break;
       default:

@@ -10,6 +10,15 @@
     <header>
       <h1>TalkBack Recorder</h1>
       <button id="record-btn">● Record</button>
+      <div id="auto-crawl">
+        <input type="file" id="auto-crawl-file" accept=".jsonl,application/json,application/x-ndjson,text/plain" hidden />
+        <button id="auto-crawl-load">⤓  Auto-crawl…</button>
+        <span id="auto-crawl-info" hidden>
+          <span id="auto-crawl-label"></span>
+          <button id="auto-crawl-remove" title="Remove file">×</button>
+        </span>
+        <button id="auto-crawl-pause" hidden>⏸ Pause</button>
+      </div>
       <span id="recording-stats"></span>
       <div id="status">connecting…</div>
     </header>
@@ -42,6 +51,10 @@
         <div class="pane-header">
           <h2>Transcript</h2>
           <button id="clear-transcript">clear</button>
+        </div>
+        <div id="autocrawl-status" hidden>
+          <div id="autocrawl-status-header">Auto-crawl</div>
+          <ol id="autocrawl-list"></ol>
         </div>
         <ul id="transcript-list"></ul>
       </section>

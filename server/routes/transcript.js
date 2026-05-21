@@ -1,6 +1,6 @@
 const express = require('express');
 
-module.exports = function transcriptRoute({ collector }) {
+module.exports = function transcriptRoute({ collector, recordingManager }) {
   const router = express.Router();
 
   router.get('/', (req, res) => {
@@ -30,6 +30,8 @@ module.exports = function transcriptRoute({ collector }) {
     const onGesture = (data) => write('gesture', data);
     const onClick = (data) => write('click', data);
     const onTextChange = (data) => write('text_change', data);
+    const onAnnouncement = (data) => write('announcement', data);
+    const onRecordingCapture = (data) => write('recording_capture', data);
 
     collector.on('entry', onEntry);
     collector.on('bounds', onBounds);
@@ -38,6 +40,8 @@ module.exports = function transcriptRoute({ collector }) {
     collector.on('gesture', onGesture);
     collector.on('click', onClick);
     collector.on('text_change', onTextChange);
+    collector.on('announcement', onAnnouncement);
+    if (recordingManager) recordingManager.on('capture', onRecordingCapture);
 
     req.on('close', () => {
       collector.off('entry', onEntry);
@@ -47,6 +51,8 @@ module.exports = function transcriptRoute({ collector }) {
       collector.off('gesture', onGesture);
       collector.off('click', onClick);
       collector.off('text_change', onTextChange);
+      collector.off('announcement', onAnnouncement);
+      if (recordingManager) recordingManager.off('capture', onRecordingCapture);
     });
   });
 

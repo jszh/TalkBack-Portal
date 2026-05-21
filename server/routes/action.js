@@ -13,7 +13,19 @@ const TARGET_COMPONENT =
  * by shelling out to `adb shell am broadcast`. Targets the receiver explicitly
  * so the action is delivered on Android 8+.
  */
-module.exports = function actionRoute({ adbSerial }) {
+const TALKBACK_TO_USER_VERB = {
+  ACTION_SWIPE_LEFT: 'swipe_left',
+  ACTION_SWIPE_RIGHT: 'swipe_right',
+  ACTION_SWIPE_UP: 'swipe_up',
+  ACTION_SWIPE_DOWN: 'swipe_down',
+  ACTION_CLICK: 'click',
+  ACTION_LONG_CLICK: 'long_click',
+  ACTION_BACK: 'back',
+  ACTION_HOME: 'home',
+  ACTION_SAY: 'say',
+};
+
+module.exports = function actionRoute({ adbSerial, recordingManager }) {
   const router = express.Router();
 
   router.post('/', async (req, res) => {
@@ -21,6 +33,16 @@ module.exports = function actionRoute({ adbSerial }) {
     if (!action || typeof action !== 'string') {
       res.status(400).json({ error: 'action (string) required' });
       return;
+    }
+    if (recordingManager) {
+      const verb = TALKBACK_TO_USER_VERB[action] || action.replace(/^ACTION_/, '').toLowerCase();
+      const note = { action: verb };
+      if (verb === 'say' && params && typeof params.PARAMETER_TEXT === 'string') {
+        note.text = params.PARAMETER_TEXT;
+      } else if (params && typeof params === 'object') {
+        note.params = params;
+      }
+      recordingManager.noteUserAction(note);
     }
     const args = [
       'shell',

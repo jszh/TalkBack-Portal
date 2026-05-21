@@ -83,6 +83,8 @@ async function main() {
     appHistory,
   });
 
+  ctx.recordingManager = recordingManager;
+
   app.use('/api/transcript', transcriptRoute(ctx));
   app.use('/api/screenshot', screenshotRoute(ctx));
   app.use('/api/tree', treeRoute(ctx));

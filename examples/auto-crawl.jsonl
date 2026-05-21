@@ -1,0 +1,7 @@
+{"action": "tap", "x": 540, "y": 1200}
+{"action": "swipe_left"}
+{"action": "swipe_right"}
+{"action": "long_click"}
+{"action": "click"}
+{"action": "wait"}
+{"action": "swipe_right"}

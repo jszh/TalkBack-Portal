@@ -92,6 +92,102 @@ Set `MOBILERUN_TOKEN` to override.
 | POST   | `/api/gesture`                    | `{type:"tap",x,y}` or `{type:"swipe",x1,y1,x2,y2,durationMs}`    |
 | POST   | `/api/talkback-action`            | `{action:"ACTION_SWIPE_RIGHT", params:{...}}`                    |
 
+## Auto-crawl
+
+Upload a JSONL of actions in the header (⤓ Auto-crawl…). When you press
+Record, the actions are replayed in order; pressing Stop (or removing the
+file with ×) cancels the replay. Between most actions the front-end waits
+the event-settle window plus a 1-second buffer. After a `tap` or `click`
+(which often navigate or load content) the wait is dynamic: up to 5
+seconds total, but ending 1.6 seconds after the first TalkBack
+announcement if that's sooner. Additionally, after the base wait, the
+loop holds until the most recent server-side recording screenshot is at
+least 500 ms old, so the next action never fires before the screenshot
+for the current focus has finished writing. A `⏸ Pause / ▶ Resume` button
+next to the file name suspends and resumes the replay at any time, and a
+`{"action":"wait"}` row pauses the replay automatically until Resume is
+clicked.
+
+One verb per row — backend details (`ACTION_` prefix, `PARAMETER_TEXT`, the
+gesture/broadcast split) are hidden and translated in code:
+
+| `action` | Required        | Optional      | Notes                                |
+| -------- | --------------- | ------------- | ------------------------------------ |
+| `tap`    | `x`, `y`        | —             | coordinate tap                       |
+| `swipe`  | `x1,y1,x2,y2`   | `durationMs`  | coordinate swipe                     |
+| `swipe_left` / `swipe_right` / `swipe_up` / `swipe_down` | — | `params` | TalkBack directional swipe |
+| `click` / `long_click`                                   | — | `params` | TalkBack click on focused element |
+| `back` / `home`                                          | — | —        | system nav                       |
+| `say`                                                    | `text` | —    | speak text                       |
+| `wait`                                                   | — | `seconds` | sleep N seconds; without `seconds`, pause until Resume |
+| any other verb                                           | — | `params` | passthrough → `ACTION_<UPPER>`   |
+
+See [`examples/auto-crawl.jsonl`](examples/auto-crawl.jsonl) for a runnable
+example, or:
+
+```jsonl
+{"action": "tap", "x": 540, "y": 1200}
+{"action": "swipe_right"}
+{"action": "swipe", "x1": 800, "y1": 1500, "x2": 200, "y2": 1500, "durationMs": 300}
+{"action": "say", "text": "starting test"}
+{"action": "wait", "seconds": 3}
+{"action": "click"}
+{"action": "wait"}
+{"action": "back"}
+```
+
+### Status panel + transcript annotations
+
+While a JSONL is loaded, a status panel appears above the transcript listing
+every action in the file. As the replay advances, the current line is
+highlighted and auto-centered (lyrics-style); previous lines dim. Click any
+entry to select it — a `Jump here` button appears on the row. Clicking it
+while a recording is running snaps the replay to that action immediately
+(interrupting any in-flight wait, settle, or pause). The pause / resume
+button stays visible for the entire recording, so you can pause before the
+first action, between actions, or after the replay finishes.
+
+Every action — whether replayed from the JSONL, fired from a toolbar
+button, typed into the `say` input, tapped/swiped on the screenshot, or
+emitted by TalkBack from a physical touch — lands in the transcript as
+its own card with the concrete params (e.g. `tap (540, 1200)`,
+`swipe (800,1500→200,1500) 300ms`, `say "hello"`). Actions are never
+merged into the focus card that follows; the next focus event renders
+separately with TalkBack's announcements.
+
+### `user_actions.jsonl` in saved recordings
+
+Every action that affects TalkBack — whether dispatched from the browser
+UI (auto-crawl row, toolbar button, `say`, pointer on the screenshot) or
+performed directly on the device (physical touch, double-tap, swipe with
+fingers) — is appended to a standalone `user_actions.jsonl` inside the
+zip. Each row has its own `timestamp_ms` (relative to session start) so
+fast sequences and actions that produce no TalkBack feedback are still
+preserved. The `source` field distinguishes them:
+
+```jsonl
+{"session_id":"...","seq":1,"timestamp_ms":1820,"source":"browser","action":"swipe_right"}
+{"session_id":"...","seq":2,"timestamp_ms":2110,"source":"browser","action":"swipe_right"}
+{"session_id":"...","seq":3,"timestamp_ms":4905,"source":"browser","action":"tap","x":540,"y":1200}
+{"session_id":"...","seq":4,"timestamp_ms":7110,"source":"browser","action":"say","text":"hello"}
+{"session_id":"...","seq":5,"timestamp_ms":9220,"source":"phone","action":"swipe_right"}
+{"session_id":"...","seq":6,"timestamp_ms":9840,"source":"phone","action":"click","resource_id":"...","class":"...","text":"Open"}
+```
+
+Browser-initiated `ACTION_*` broadcasts (toolbar buttons, `say`,
+auto-crawl rows) echo back through TalkBack's SSE stream as an
+`'action'` event, followed shortly after by a `'gesture'` or `'click'`
+event as TalkBack performs the action. The server uses the `'action'`
+SSE itself as the dedup anchor — TalkBack only emits it in response
+to an ADB broadcast we sent, never from phone-side user input. The
+`'action'` row is dropped, and any `'gesture'` / `'click'` SSE that
+lands within ~500 ms of it is dropped too. Anything outside that
+window is recorded as `source: "phone"`, so a genuine phone-side
+swipe one second after a browser swipe is preserved cleanly.
+`events.jsonl` continues to hold TalkBack feedback (focus / wrap /
+announcement / type / session_start), and the two files share
+`timestamp_ms` for correlation.
+
 ## What replaces what in the old TaskAudit logcat flow
 
 | Old             | New                                                |
